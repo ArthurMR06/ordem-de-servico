@@ -21,7 +21,7 @@
         .campo-senha { position: relative; width: 100%; margin: 15px 0; }
         .campo-senha input { width: 100%; padding: 12px 40px 12px 12px; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; outline: none; }
         .olho { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 20px; }
-        input[type="text"], textarea { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
+        input[type="text"], textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; background: white; }
         .grid-probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0; }
         .check-item { position: relative; }
         .check-item input { display: none; }
@@ -62,6 +62,14 @@
         </div>
         <div id="area-func" style="display:none;">
             <input type="text" id="f-nome" placeholder="Seu nome completo">
+            
+            <p><strong>Tipo de Atendimento:</strong></p>
+            <select id="f-tipo">
+                <option value="Remoto">Remoto</option>
+                <option value="Visita Técnica">Visita Técnica</option>
+                <option value="Versionamento de Sistema">Versionamento de Sistema</option>
+            </select>
+
             <p><strong>Selecione os problemas encontrados:</strong></p>
             <div class="grid-probs">
                 <label class="check-item"><input type="checkbox" class="prob" value="Sistema Lento"><span>🐢 Sistema Lento</span></label>
@@ -73,7 +81,7 @@
                 <label class="check-item"><input type="checkbox" id="check-outros"><span>➕ Outros</span></label>
             </div>
             <input type="text" id="f-outros" placeholder="Descreva o problema brevemente" style="display:none;">
-            <textarea id="f-desc" rows="3" placeholder="Mais detalhes (Opcional)"></textarea>
+            <textarea id="f-desc" rows="3" placeholder="Mais detalhes / Especificações (Opcional)"></textarea>
             <button class="btn btn-save" id="btn-enviar-os" type="button">🚀 Enviar Chamado via WhatsApp</button>
         </div>
     </div>
@@ -170,7 +178,9 @@
     document.getElementById('btn-enviar-os').onclick = () => {
         const nome = document.getElementById('f-nome').value;
         const desc = document.getElementById('f-desc').value;
+        const tipo = document.getElementById('f-tipo').value;
         let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
+        
         if(document.getElementById('check-outros').checked) {
             let outrosVal = document.getElementById('f-outros').value;
             if(outrosVal) selecionados.push(outrosVal);
@@ -179,9 +189,11 @@
             alert("Preencha seu nome e selecione o problema!");
             return;
         }
+        
         const agora = new Date();
         const novaOS = {
             funcionario: nome,
+            tipo_atendimento: tipo,
             problemas: selecionados.join(", "),
             descricao: desc || "Nenhuma observação.",
             status: "Pendente",
@@ -189,8 +201,9 @@
             mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
             resolvida_em: ""
         };
+
         push(ref(db, 'chamados'), novaOS).then(() => {
-            const textoZap = `*SOLICITAÇÃO DE SUPORTE*%0A*Funcionário:* ${novaOS.funcionario}%0A*Problemas:* ${novaOS.problemas}%0A*Data:* ${novaOS.criado_em}`;
+            const textoZap = `*SOLICITAÇÃO DE SUPORTE*%0A*Funcionário:* ${novaOS.funcionario}%0A*Atendimento:* ${novaOS.tipo_atendimento}%0A*Problemas:* ${novaOS.problemas}%0A*Obs:* ${novaOS.descricao}%0A*Data:* ${novaOS.criado_em}`;
             window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
             document.getElementById('f-nome').value = "";
             document.getElementById('f-desc').value = "";
@@ -207,20 +220,23 @@
         if(!snapshot.exists()) return;
         const dados = snapshot.val();
         const meses = {};
+        
         Object.keys(dados).forEach(id => {
             const os = dados[id];
             if(!meses[os.mes_ref]) meses[os.mes_ref] = [];
             meses[os.mes_ref].push({id, ...os});
         });
+
         Object.keys(meses).reverse().forEach(mes => {
             let html = `<div class="month-group"><div class="month-header">${mes}</div>`;
             meses[mes].reverse().forEach(os => {
-                // CORREÇÃO AQUI: Remove o espaço para bater com a classe CSS (.bg-emespera)
                 const badgeClass = `bg-${os.status.toLowerCase().replace(/\s/g, "")}`;
                 html += `<div class="card-os">
                     <span class="status-badge ${badgeClass}">${os.status}</span>
-                    <strong>👤 ${os.funcionario}</strong>
-                    <p><b>Problemas:</b> ${os.problemas}<br><small>${os.descricao}</small></p>
+                    <strong>👤 ${os.funcionario}</strong> 
+                    <span style="font-size: 0.8em; color: var(--primary); margin-left:10px;">[${os.tipo_atendimento || 'N/A'}]</span>
+                    <p><b>Problemas:</b> ${os.problemas}<br>
+                    <b>Observação:</b> <small>${os.descricao}</small></p>
                     <span class="time-info">📅 ${os.criado_em}</span>
                     <div style="margin-top:15px">
                         <button class="btn btn-wait" onclick="mudarStatus('${os.id}', 'Em Espera')">Espera</button>
