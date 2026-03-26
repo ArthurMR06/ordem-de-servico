@@ -46,7 +46,6 @@
 
 <div class="container">
     <h2>🛠️ Gestão de Chamados TI</h2>
-    
     <div class="nav">
         <button class="btn-nav active" id="tab-func">Reportar Problema</button>
         <button class="btn-nav" id="tab-adm">Painel ADM</button>
@@ -61,7 +60,6 @@
             </div>
             <button class="btn btn-save" id="btn-login-func">Acessar Formulário</button>
         </div>
-
         <div id="area-func" style="display:none;">
             <input type="text" id="f-nome" placeholder="Seu nome completo">
             <p><strong>Selecione os problemas encontrados:</strong></p>
@@ -69,14 +67,14 @@
                 <label class="check-item"><input type="checkbox" class="prob" value="Sistema Lento"><span>🐢 Sistema Lento</span></label>
                 <label class="check-item"><input type="checkbox" class="prob" value="Internet Caindo"><span>🌐 Internet Caindo</span></label>
                 <label class="check-item"><input type="checkbox" class="prob" value="Erro de Login"><span>🔑 Erro de Login</span></label>
-                <label class="check-item"><input type="checkbox" class="prob" value="Impressora Offline"><span>🖨️ Impressora Parou</span></label>
+                <label class="check-item"><input type="checkbox" class="prob" value="Impressora Parou"><span>🖨️ Impressora Parou</span></label>
                 <label class="check-item"><input type="checkbox" class="prob" value="Página Não Carrega"><span>❌ Não Carrega</span></label>
                 <label class="check-item"><input type="checkbox" class="prob" value="Computador Travando"><span>💻 PC Travando</span></label>
                 <label class="check-item"><input type="checkbox" id="check-outros"><span>➕ Outros</span></label>
             </div>
             <input type="text" id="f-outros" placeholder="Descreva o problema brevemente" style="display:none;">
             <textarea id="f-desc" rows="3" placeholder="Mais detalhes (Opcional)"></textarea>
-            <button class="btn btn-save" id="btn-enviar-os">🚀 Enviar Chamado via WhatsApp</button>
+            <button class="btn btn-save" id="btn-enviar-os" type="button">🚀 Enviar Chamado via WhatsApp</button>
         </div>
     </div>
 
@@ -114,84 +112,97 @@
     const db = getDatabase(app);
     const WHATS_CRIADOR = "5521989127567";
 
-    const setupOlho = (btnId, inputId) => {
-        document.getElementById(btnId).onclick = () => {
-            const input = document.getElementById(inputId);
-            input.type = input.type === "password" ? "text" : "password";
-            document.getElementById(btnId).innerText = input.type === "password" ? "👁️" : "🚫";
-        };
+    document.getElementById('btn-olho-func').onclick = () => {
+        const input = document.getElementById('pass-func-in');
+        input.type = input.type === 'password' ? 'text' : 'password';
+        document.getElementById('btn-olho-func').innerText = input.type === 'password' ? '👁️' : '🚫';
     };
-    setupOlho('btn-olho-func', 'pass-func-in');
-    setupOlho('btn-olho-adm', 'pass-adm-in');
 
-    const login = (tipo) => {
-        const pass = document.getElementById(tipo === 'func' ? 'pass-func-in' : 'pass-adm-in').value;
-        const correta = tipo === 'func' ? "funcionario123" : "admin";
-        if(pass === correta) {
-            document.getElementById(`login-${tipo}`).style.display = 'none';
-            document.getElementById(`area-${tipo}`).style.display = 'block';
+    document.getElementById('btn-olho-adm').onclick = () => {
+        const input = document.getElementById('pass-adm-in');
+        input.type = input.type === 'password' ? 'text' : 'password';
+        document.getElementById('btn-olho-adm').innerText = input.type === 'password' ? '👁️' : '🚫';
+    };
+
+    document.getElementById('btn-login-func').onclick = () => {
+        if(document.getElementById('pass-func-in').value === "funcionario123") {
+            document.getElementById('login-func').style.display = 'none';
+            document.getElementById('area-func').style.display = 'block';
         } else { alert("Senha incorreta!"); }
     };
-    document.getElementById('btn-login-func').onclick = () => login('func');
-    document.getElementById('btn-login-adm').onclick = () => login('adm');
 
-    const nav = (t) => {
+    document.getElementById('btn-login-adm').onclick = () => {
+        if(document.getElementById('pass-adm-in').value === "admin") {
+            document.getElementById('login-adm').style.display = 'none';
+            document.getElementById('area-adm').style.display = 'block';
+        } else { alert("Senha incorreta!"); }
+    };
+
+    document.getElementById('tab-func').onclick = () => {
         document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`tab-${t}`).classList.add('active');
-        document.getElementById(`sec-${t}`).classList.add('active');
+        document.getElementById('tab-func').classList.add('active');
+        document.getElementById('sec-func').classList.add('active');
     };
-    document.getElementById('tab-func').onclick = () => nav('func');
-    document.getElementById('tab-adm').onclick = () => nav('adm');
+
+    document.getElementById('tab-adm').onclick = () => {
+        document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('tab-adm').classList.add('active');
+        document.getElementById('sec-adm').classList.add('active');
+    };
 
     document.getElementById('check-outros').onchange = (e) => {
         document.getElementById('f-outros').style.display = e.target.checked ? 'block' : 'none';
     };
 
-    document.getElementById('btn-enviar-os').onclick = () => {
-        const nome = document.getElementById('f-nome').value;
-        const desc = document.getElementById('f-desc').value;
-        let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
-        
-        if(document.getElementById('check-outros').checked) {
-            let outrosVal = document.getElementById('f-outros').value;
-            if(outrosVal) selecionados.push(outrosVal);
-        }
-
-        if(!nome || selecionados.length === 0) {
-            alert("Preencha seu nome e selecione o problema!");
-            return;
-        }
-
-        const agora = new Date();
-        const novaOS = {
-            funcionario: nome,
-            problemas: selecionados.join(", "),
-            descricao: desc || "Nenhuma observação.",
-            status: "Pendente",
-            criado_em: agora.toLocaleString('pt-BR'),
-            mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
-            resolvida_em: ""
-        };
-
-        push(ref(db, 'chamados'), novaOS).then(() => {
-            const textoZap = `*SOLICITAÇÃO DE SUPORTE*%0A*Funcionário:* ${novaOS.funcionario}%0A*Problemas:* ${novaOS.problemas}%0A*Data:* ${novaOS.criado_em}`;
-            window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
+    document.addEventListener('click', function (event) {
+        if (event.target && event.target.id === 'btn-enviar-os') {
+            const nome = document.getElementById('f-nome').value;
+            const desc = document.getElementById('f-desc').value;
+            let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
             
-            document.getElementById('f-nome').value = "";
-            document.getElementById('f-desc').value = "";
-            document.querySelectorAll('.prob').forEach(c => c.checked = false);
-            document.getElementById('check-outros').checked = false;
-            document.getElementById('f-outros').style.display = 'none';
-            alert("Chamado enviado com sucesso!");
-        });
-    };
+            if(document.getElementById('check-outros').checked) {
+                let outrosVal = document.getElementById('f-outros').value;
+                if(outrosVal) selecionados.push(outrosVal);
+            }
+
+            if(!nome || selecionados.length === 0) {
+                alert("Preencha seu nome e selecione o problema!");
+                return;
+            }
+
+            const agora = new Date();
+            const novaOS = {
+                funcionario: nome,
+                problemas: selecionados.join(", "),
+                descricao: desc || "Nenhuma observação.",
+                status: "Pendente",
+                criado_em: agora.toLocaleString('pt-BR'),
+                mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
+                resolvida_em: ""
+            };
+
+            push(ref(db, 'chamados'), novaOS).then(() => {
+                const textoZap = `*SOLICITAÇÃO DE SUPORTE*%0A*Funcionário:* ${novaOS.funcionario}%0A*Problemas:* ${novaOS.problemas}%0A*Data:* ${novaOS.criado_em}`;
+                window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
+                
+                document.getElementById('f-nome').value = "";
+                document.getElementById('f-desc').value = "";
+                document.querySelectorAll('.prob').forEach(c => c.checked = false);
+                document.getElementById('check-outros').checked = false;
+                document.getElementById('f-outros').style.display = 'none';
+                alert("Chamado enviado com sucesso!");
+            }).catch((error) => {
+                alert("Erro ao salvar no banco de dados: " + error.message);
+            });
+        }
+    });
 
     onValue(ref(db, 'chamados'), (snapshot) => {
         const container = document.getElementById('lista-meses');
         container.innerHTML = "";
         if(!snapshot.exists()) return;
-        
         const dados = snapshot.val();
         const meses = {};
         Object.keys(dados).forEach(id => {
@@ -199,42 +210,35 @@
             if(!meses[os.mes_ref]) meses[os.mes_ref] = [];
             meses[os.mes_ref].push({id, ...os});
         });
-
         Object.keys(meses).reverse().forEach(mes => {
             let html = `<div class="month-group"><div class="month-header">${mes}</div>`;
             meses[mes].reverse().forEach(os => {
                 const badgeClass = `bg-${os.status.toLowerCase().replace(" ", "")}`;
-                const osId = os.id;
-                html += `
-                    <div class="card-os">
-                        <span class="status-badge ${badgeClass}">${os.status}</span>
-                        <strong>👤 ${os.funcionario}</strong>
-                        <p><b>Problemas:</b> ${os.problemas}<br><small>${os.descricao}</small></p>
-                        <span class="time-info">📅 ${os.criado_em}</span>
-                        <div style="margin-top:10px">
-                            <button class="btn btn-wait" data-id="${osId}" data-act="Em Espera">Espera</button>
-                            <button class="btn btn-done" data-id="${osId}" data-act="Resolvida">Resolver</button>
-                            <button class="btn btn-del" data-id="${osId}" data-act="Excluir">Excluir</button>
-                        </div>
-                    </div>`;
+                html += `<div class="card-os">
+                    <span class="status-badge ${badgeClass}">${os.status}</span>
+                    <strong>👤 ${os.funcionario}</strong>
+                    <p><b>Problemas:</b> ${os.problemas}<br><small>${os.descricao}</small></p>
+                    <span class="time-info">📅 ${os.criado_em}</span>
+                    <div style="margin-top:10px">
+                        <button class="btn btn-wait" onclick="window.mudarStatus('${os.id}', 'Em Espera')">Espera</button>
+                        <button class="btn btn-done" onclick="window.mudarStatus('${os.id}', 'Resolvida')">Resolver</button>
+                        <button class="btn btn-del" onclick="window.excluir('${os.id}')">Excluir</button>
+                    </div>
+                </div>`;
             });
             container.innerHTML += html + `</div>`;
         });
-
-        document.querySelectorAll('[data-act]').forEach(btn => {
-            btn.onclick = () => {
-                const id = btn.getAttribute('data-id');
-                const acao = btn.getAttribute('data-act');
-                if(acao === 'Excluir') {
-                    if(confirm("Remover permanentemente?")) remove(ref(db, `chamados/${id}`));
-                } else {
-                    const upd = { status: acao };
-                    if(acao === 'Resolvida') upd.resolvida_em = new Date().toLocaleString('pt-BR');
-                    update(ref(db, `chamados/${id}`), upd);
-                }
-            };
-        });
     });
+
+    window.mudarStatus = (id, novo) => {
+        const upd = { status: novo };
+        if(novo === 'Resolvida') upd.resolvida_em = new Date().toLocaleString('pt-BR');
+        update(ref(db, `chamados/${id}`), upd);
+    };
+
+    window.excluir = (id) => {
+        if(confirm("Remover permanentemente?")) remove(ref(db, `chamados/${id}`));
+    };
 </script>
 </body>
 </html>
