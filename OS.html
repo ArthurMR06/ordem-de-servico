@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de OS - Profissional</title>
+    <style>
+        :root {
+            --primary: #2563eb; --success: #16a34a; --warning: #ca8a04;
+            --danger: #dc2626; --dark: #1e293b; --light: #f8fafc;
+        }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; color: var(--dark); }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-top: 0; text-align: center; }
+        .nav { display: flex; gap: 10px; margin-bottom: 25px; }
+        .btn-nav { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; background: #e2e8f0; font-weight: bold; transition: 0.3s; }
+        .btn-nav.active { background: var(--primary); color: white; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .card-login { max-width: 350px; margin: 40px auto; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: #fff; }
+        input, textarea, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .grid-probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: var(--light); padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #eee; }
+        .check-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
+        .month-group { margin-top: 25px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #fff; }
+        .month-header { background: var(--dark); color: white; padding: 10px 15px; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; }
+        .card-os { background: white; border-bottom: 1px solid #eee; padding: 15px; position: relative; }
+        .status-badge { float: right; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; color: white; font-weight: bold; text-transform: uppercase; }
+        .bg-pendente { background: var(--primary); }
+        .bg-espera { background: var(--warning); }
+        .bg-resolvida { background: var(--success); }
+        .time-info { font-size: 0.75rem; color: #64748b; display: block; margin-top: 4px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; color: white; margin-top: 10px; transition: 0.2s; }
+        .btn-save { background: var(--success); width: 100%; font-size: 1rem; }
+        .btn-wait { background: var(--warning); margin-right: 5px; }
+        .btn-done { background: var(--success); margin-right: 5px; }
+        .btn-del { background: var(--danger); font-size: 0.75rem; }
+        footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🛠️ Gestão de Chamados</h2>
+    <div class="nav">
+        <button class="btn-nav active" id="tab-func">Funcionário</button>
+        <button class="btn-nav" id="tab-adm">Administração</button>
+    </div>
+    <div id="sec-func" class="section active">
+        <div id="login-func" class="card-login">
+            <h3>Acesso Funcionário</h3>
+            <input type="password" id="pass-func-in" placeholder="Senha do Funcionário">
+            <button class="btn btn-save" onclick="realizarLogin('func')">Entrar</button>
+        </div>
+        <div id="area-func" style="display:none;">
+            <input type="text" id="f-nome" placeholder="Seu Nome">
+            <p><strong>Onde é o problema?</strong></p>
+            <div class="grid-probs">
+                <label class="check-item"><input type="checkbox" class="prob" value="Roteador"> Roteador</label>
+                <label class="check-item"><input type="checkbox" class="prob" value="Sistema"> Sistema</label>
+                <label class="check-item"><input type="checkbox" class="prob" value="Erro Humano"> Erro Humano</label>
+                <label class="check-item"><input type="checkbox" id="check-outros"> Outros</label>
+            </div>
+            <input type="text" id="f-outros" placeholder="Especifique o problema" style="display:none;">
+            <textarea id="f-desc" rows="3" placeholder="Detalhes da Ordem de Serviço"></textarea>
+            <button class="btn btn-save" onclick="enviarOS()">🚀 Abrir Chamado e Notificar WhatsApp</button>
+        </div>
+    </div>
+    <div id="sec-adm" class="section">
+        <div id="login-adm" class="card-login">
+            <h3>Painel do Criador</h3>
+            <input type="password" id="pass-adm-in" placeholder="Senha do ADM">
+            <button class="btn btn-save" onclick="realizarLogin('adm')">Acessar Relatórios</button>
+        </div>
+        <div id="area-adm" style="display:none;">
+            <div id="lista-meses"></div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    © 2026 Arthur M. Rangel  |  Versão 1.0
+</footer>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAc8GUdZWXyBtYBzVt7zR1bpOd4V0ox2ZM",
+        authDomain: "abertura-os-8fa59.firebaseapp.com",
+        projectId: "abertura-os-8fa59",
+        storageBucket: "abertura-os-8fa59.firebasestorage.app",
+        messagingSenderId: "679824713317",
+        appId: "1:679824713317:web:12bae59ccccaf6a1ea888c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const WHATS_CRIADOR = "5521989127567";
+
+    window.realizarLogin = (tipo) => {
+        const pass = document.getElementById(tipo === 'func' ? 'pass-func-in' : 'pass-adm-in').value;
+        const correta = (tipo === 'func') ? "funcionario123" : "admin";
+        if(pass === correta) {
+            document.getElementById(`login-${tipo}`).style.display = 'none';
+            document.getElementById(`area-${tipo}`).style.display = 'block';
+        } else { alert("Senha incorreta!"); }
+    };
+
+    document.getElementById('tab-func').onclick = () => { toggle('func'); };
+    document.getElementById('tab-adm').onclick = () => { toggle('adm'); };
+    function toggle(t) {
+        document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`tab-${t}`).classList.add('active');
+        document.getElementById(`sec-${t}`).classList.add('active');
+    }
+
+    document.getElementById('check-outros').onchange = (e) => {
+        document.getElementById('f-outros').style.display = e.target.checked ? 'block' : 'none';
+    };
+
+    window.enviarOS = () => {
+        const nome = document.getElementById('f-nome').value;
+        const desc = document.getElementById('f-desc').value;
+        let probs = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
+        if(document.getElementById('check-outros').checked) probs.push("Outros: " + document.getElementById('f-outros').value);
+        if(!nome || probs.length === 0) return alert("Preencha seu nome e selecione o problema!");
+        const agora = new Date();
+        const novaOS = {
+            funcionario: nome,
+            problemas: probs.join(", "),
+            descricao: desc,
+            status: "Pendente",
+            criado_em: agora.toLocaleString('pt-BR'),
+            mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
+            resolvida_em: ""
+        };
+        push(ref(db, 'chamados'), novaOS).then(() => {
+            const textoZap = `*NOVA OS* %0A*De:* ${novaOS.funcionario} %0A*Problemas:* ${novaOS.problemas} %0A*Data:* ${novaOS.criado_em}`;
+            window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
+            limpar();
+            alert("Ordem de serviço aberta!");
+        });
+    };
+
+    function limpar() {
+        document.getElementById('f-nome').value = ""; document.getElementById('f-desc').value = "";
+        document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+        document.getElementById('f-outros').style.display = 'none';
+    }
+
+    onValue(ref(db, 'chamados'), (snapshot) => {
+        const container = document.getElementById('lista-meses');
+        container.innerHTML = "";
+        if(!snapshot.exists()) return;
+        const dados = snapshot.val();
+        const meses = {};
+        Object.keys(dados).forEach(id => {
+            const os = dados[id];
+            if(!meses[os.mes_ref]) meses[os.mes_ref] = [];
+            meses[os.mes_ref].push({id, ...os});
+        });
+        Object.keys(meses).reverse().forEach(mes => {
+            let html = `<div class="month-group"><div class="month-header">${mes}</div>`;
+            meses[mes].reverse().forEach(os => {
+                const badgeClass = `bg-${os.status.toLowerCase().replace(" ", "")}`;
+                html += `
+                    <div class="card-os">
+                        <span class="status-badge ${badgeClass}">${os.status}</span>
+                        <strong>${os.funcionario}</strong>
+                        <p style="margin:5px 0"><b>Problemas:</b> ${os.problemas}<br><small>${os.descricao}</small></p>
+                        <span class="time-info">📅 Aberta: ${os.criado_em}</span>
+                        ${os.resolvida_em ? `<span class="time-info" style="color:var(--success)">✅ Resolvida: ${os.resolvida_em}</span>` : ''}
+                        <div class="btn-group">
+                            <button onclick="mudarStatus('${os.id}', 'Em Espera')" class="btn btn-wait">Em Espera</button>
+                            <button onclick="mudarStatus('${os.id}', 'Resolvida')" class="btn btn-done">Resolver</button>
+                            <button onclick="excluir('${os.id}')" class="btn btn-del">Excluir</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            container.innerHTML += html;
+        });
+    });
+
+    window.mudarStatus = (id, status) => {
+        const updates = { status: status };
+        if(status === 'Resolvida') updates.resolvida_em = new Date().toLocaleString('pt-BR');
+        update(ref(db, `chamados/${id}`), updates);
+    };
+
+    window.excluir = (id) => { if(confirm("Deseja apagar esta OS?")) remove(ref(db, `chamados/${id}`)); };
+</script>
+</body>
+</html>
