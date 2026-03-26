@@ -157,48 +157,54 @@
         document.getElementById('f-outros').style.display = e.target.checked ? 'block' : 'none';
     };
 
-    document.addEventListener('click', function (event) {
-        if (event.target && event.target.id === 'btn-enviar-os') {
-            const nome = document.getElementById('f-nome').value;
-            const desc = document.getElementById('f-desc').value;
-            let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
-            
-            if(document.getElementById('check-outros').checked) {
-                let outrosVal = document.getElementById('f-outros').value;
-                if(outrosVal) selecionados.push(outrosVal);
-            }
-
-            if(!nome || selecionados.length === 0) {
-                alert("Preencha seu nome e selecione o problema!");
-                return;
-            }
-
-            const agora = new Date();
-            const novaOS = {
-                funcionario: nome,
-                problemas: selecionados.join(", "),
-                descricao: desc || "Nenhuma observação.",
-                status: "Pendente",
-                criado_em: agora.toLocaleString('pt-BR'),
-                mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
-                resolvida_em: ""
-            };
-
-            push(ref(db, 'chamados'), novaOS).then(() => {
-                const textoZap = `*SOLICITAÇÃO DE SUPORTE*%0A*Funcionário:* ${novaOS.funcionario}%0A*Problemas:* ${novaOS.problemas}%0A*Data:* ${novaOS.criado_em}`;
-                window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
-                
-                document.getElementById('f-nome').value = "";
-                document.getElementById('f-desc').value = "";
-                document.querySelectorAll('.prob').forEach(c => c.checked = false);
-                document.getElementById('check-outros').checked = false;
-                document.getElementById('f-outros').style.display = 'none';
-                alert("Chamado enviado com sucesso!");
-            }).catch((error) => {
-                alert("Erro ao salvar: " + error.message);
-            });
+    document.getElementById('btn-enviar-os').onclick = () => {
+        const nome = document.getElementById('f-nome').value;
+        const desc = document.getElementById('f-desc').value;
+        let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
+        
+        if(document.getElementById('check-outros').checked) {
+            let outrosVal = document.getElementById('f-outros').value;
+            if(outrosVal) selecionados.push(outrosVal);
         }
-    });
+
+        if(!nome || selecionados.length === 0) {
+            alert("Preencha seu nome e selecione o problema!");
+            return;
+        }
+
+        const agora = new Date();
+        const novaOS = {
+            funcionario: nome,
+            problemas: selecionados.join(", "),
+            descricao: desc || "Nenhuma observação.",
+            status: "Pendente",
+            criado_em: agora.toLocaleString('pt-BR'),
+            mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
+            resolvida_em: ""
+        };
+
+        push(ref(db, 'chamados'), novaOS).then(() => {
+            const textoZap = `*SOLICITAÇÃO DE SUPORTE*%0A*Funcionário:* ${novaOS.funcionario}%0A*Problemas:* ${novaOS.problemas}%0A*Data:* ${novaOS.criado_em}`;
+            window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
+            
+            document.getElementById('f-nome').value = "";
+            document.getElementById('f-desc').value = "";
+            document.querySelectorAll('.prob').forEach(c => c.checked = false);
+            document.getElementById('check-outros').checked = false;
+            document.getElementById('f-outros').style.display = 'none';
+            alert("Chamado enviado com sucesso!");
+        });
+    };
+
+    window.mudarStatus = (id, novo) => {
+        const upd = { status: novo };
+        if(novo === 'Resolvida') upd.resolvida_em = new Date().toLocaleString('pt-BR');
+        update(ref(db, `chamados/${id}`), upd);
+    };
+
+    window.excluir = (id) => {
+        if(confirm("Remover permanentemente?")) remove(ref(db, `chamados/${id}`));
+    };
 
     onValue(ref(db, 'chamados'), (snapshot) => {
         const container = document.getElementById('lista-meses');
@@ -221,25 +227,15 @@
                     <p><b>Problemas:</b> ${os.problemas}<br><small>${os.descricao}</small></p>
                     <span class="time-info">📅 ${os.criado_em}</span>
                     <div style="margin-top:10px">
-                        <button class="btn btn-wait" onclick="window.mudarStatus('${os.id}', 'Em Espera')">Espera</button>
-                        <button class="btn btn-done" onclick="window.mudarStatus('${os.id}', 'Resolvida')">Resolver</button>
-                        <button class="btn btn-del" onclick="window.excluir('${os.id}')">Excluir</button>
+                        <button class="btn btn-wait" onclick="mudarStatus('${os.id}', 'Em Espera')">Espera</button>
+                        <button class="btn btn-done" onclick="mudarStatus('${os.id}', 'Resolvida')">Resolver</button>
+                        <button class="btn btn-del" onclick="excluir('${os.id}')">Excluir</button>
                     </div>
                 </div>`;
             });
             container.innerHTML += html + `</div>`;
         });
     });
-
-    window.mudarStatus = (id, novo) => {
-        const upd = { status: novo };
-        if(novo === 'Resolvida') upd.resolvida_em = new Date().toLocaleString('pt-BR');
-        update(ref(db, `chamados/${id}`), upd);
-    };
-
-    window.excluir = (id) => {
-        if(confirm("Remover permanentemente?")) remove(ref(db, `chamados/${id}`));
-    };
 </script>
 </body>
 </html>
