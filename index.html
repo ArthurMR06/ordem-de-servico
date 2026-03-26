@@ -12,28 +12,41 @@
         body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; color: var(--dark); }
         .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
         h2 { border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-top: 0; text-align: center; }
+        
         .nav { display: flex; gap: 10px; margin-bottom: 25px; }
         .btn-nav { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; background: #e2e8f0; font-weight: bold; transition: 0.3s; }
         .btn-nav.active { background: var(--primary); color: white; }
+        
         .section { display: none; }
         .section.active { display: block; }
+
         .card-login { max-width: 350px; margin: 40px auto; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: #fff; }
-        input, textarea, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        
+        .campo-senha { position: relative; width: 100%; margin: 8px 0; }
+        .campo-senha input { width: 100%; padding: 10px 40px 10px 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .olho { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; }
+
+        input[type="text"], textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        
         .grid-probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: var(--light); padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #eee; }
         .check-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
+        
         .month-group { margin-top: 25px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #fff; }
         .month-header { background: var(--dark); color: white; padding: 10px 15px; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; }
         .card-os { background: white; border-bottom: 1px solid #eee; padding: 15px; position: relative; }
+        
         .status-badge { float: right; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; color: white; font-weight: bold; text-transform: uppercase; }
         .bg-pendente { background: var(--primary); }
         .bg-espera { background: var(--warning); }
         .bg-resolvida { background: var(--success); }
+        
         .time-info { font-size: 0.75rem; color: #64748b; display: block; margin-top: 4px; }
         .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; color: white; margin-top: 10px; transition: 0.2s; }
         .btn-save { background: var(--success); width: 100%; font-size: 1rem; }
         .btn-wait { background: var(--warning); margin-right: 5px; }
         .btn-done { background: var(--success); margin-right: 5px; }
         .btn-del { background: var(--danger); font-size: 0.75rem; }
+        
         footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #666; }
     </style>
 </head>
@@ -41,16 +54,22 @@
 
 <div class="container">
     <h2>🛠️ Gestão de Chamados</h2>
+    
     <div class="nav">
         <button class="btn-nav active" id="tab-func">Funcionário</button>
         <button class="btn-nav" id="tab-adm">Administração</button>
     </div>
+
     <div id="sec-func" class="section active">
         <div id="login-func" class="card-login">
             <h3>Acesso Funcionário</h3>
-            <input type="password" id="pass-func-in" placeholder="Senha do Funcionário">
-            <button class="btn btn-save" id="btn-login-func">Entrar</button>
+            <div class="campo-senha">
+                <input type="password" id="pass-func-in" placeholder="Senha do Funcionário">
+                <span class="olho" onclick="toggleSenha('pass-func-in', 'eye-f')" id="eye-f">👁️</span>
+            </div>
+            <button class="btn btn-save" onclick="login('func')">Entrar</button>
         </div>
+
         <div id="area-func" style="display:none;">
             <input type="text" id="f-nome" placeholder="Seu Nome">
             <p><strong>Onde é o problema?</strong></p>
@@ -62,15 +81,20 @@
             </div>
             <input type="text" id="f-outros" placeholder="Especifique o problema" style="display:none;">
             <textarea id="f-desc" rows="3" placeholder="Detalhes da Ordem de Serviço"></textarea>
-            <button class="btn btn-save" id="btn-enviar-os">🚀 Abrir Chamado e Notificar WhatsApp</button>
+            <button class="btn btn-save" onclick="enviarOS()">🚀 Abrir Chamado e Notificar WhatsApp</button>
         </div>
     </div>
+
     <div id="sec-adm" class="section">
         <div id="login-adm" class="card-login">
             <h3>Painel do Criador</h3>
-            <input type="password" id="pass-adm-in" placeholder="Senha do ADM">
-            <button class="btn btn-save" id="btn-login-adm">Acessar Relatórios</button>
+            <div class="campo-senha">
+                <input type="password" id="pass-adm-in" placeholder="Senha do ADM">
+                <span class="olho" onclick="toggleSenha('pass-adm-in', 'eye-a')" id="eye-a">👁️</span>
+            </div>
+            <button class="btn btn-save" onclick="login('adm')">Acessar Relatórios</button>
         </div>
+
         <div id="area-adm" style="display:none;">
             <div id="lista-meses"></div>
         </div>
@@ -98,7 +122,21 @@
     const db = getDatabase(app);
     const WHATS_CRIADOR = "5521989127567";
 
-    window.realizarLogin = (tipo) => {
+    // --- FUNÇÕES GLOBAIS ---
+    
+    window.toggleSenha = function(idInput, idIcone) {
+        let input = document.getElementById(idInput);
+        let icone = document.getElementById(idIcone);
+        if (input.type === "password") {
+            input.type = "text";
+            icone.innerText = "🚫";
+        } else {
+            input.type = "password";
+            icone.innerText = "👁️";
+        }
+    };
+
+    window.login = function(tipo) {
         const pass = document.getElementById(tipo === 'func' ? 'pass-func-in' : 'pass-adm-in').value;
         const correta = (tipo === 'func') ? "funcionario123" : "admin";
         if(pass === correta) {
@@ -107,47 +145,40 @@
         } else { alert("Senha incorreta!"); }
     };
 
-    window.toggle = (t) => {
+    window.toggleSec = function(t) {
         document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(`tab-${t}`).classList.add('active');
         document.getElementById(`sec-${t}`).classList.add('active');
-    }
-
-    window.mudarStatus = (id, status) => {
-        const updates = { status: status };
-        if(status === 'Resolvida') updates.resolvida_em = new Date().toLocaleString('pt-BR');
-        update(ref(db, `chamados/${id}`), updates);
     };
 
-    window.excluir = (id) => { if(confirm("Deseja apagar esta OS?")) remove(ref(db, `chamados/${id}`)); };
-
-    document.getElementById('btn-login-func').onclick = () => window.realizarLogin('func');
-    document.getElementById('btn-login-adm').onclick = () => window.realizarLogin('adm');
-    document.getElementById('tab-func').onclick = () => window.toggle('func');
-    document.getElementById('tab-adm').onclick = () => window.toggle('adm');
+    document.getElementById('tab-func').onclick = () => toggleSec('func');
+    document.getElementById('tab-adm').onclick = () => toggleSec('adm');
 
     document.getElementById('check-outros').onchange = (e) => {
         document.getElementById('f-outros').style.display = e.target.checked ? 'block' : 'none';
     };
 
-    window.enviarOS = () => {
+    window.enviarOS = function() {
         const nome = document.getElementById('f-nome').value;
         const desc = document.getElementById('f-desc').value;
-        let probs = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
+        let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
         
         if(document.getElementById('check-outros').checked) {
-            const outrosVal = document.getElementById('f-outros').value;
-            if(outrosVal) probs.push("Outros: " + outrosVal);
+            let outros = document.getElementById('f-outros').value;
+            if(outros) selecionados.push("Outros: " + outros);
         }
 
-        if(!nome || probs.length === 0) return alert("Preencha seu nome e selecione o problema!");
+        if(!nome || selecionados.length === 0) {
+            alert("Por favor, preencha seu nome e selecione pelo menos um problema.");
+            return;
+        }
 
         const agora = new Date();
         const novaOS = {
             funcionario: nome,
-            problemas: probs.join(", "),
-            descricao: desc,
+            problemas: selecionados.join(", "),
+            descricao: desc || "Sem observações",
             status: "Pendente",
             criado_em: agora.toLocaleString('pt-BR'),
             mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
@@ -156,31 +187,42 @@
 
         push(ref(db, 'chamados'), novaOS).then(() => {
             const textoZap = `*NOVA OS* %0A*De:* ${novaOS.funcionario} %0A*Problemas:* ${novaOS.problemas} %0A*Data:* ${novaOS.criado_em}`;
-            
             window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
             
-            document.getElementById('f-nome').value = ""; 
+            // Limpa formulário
+            document.getElementById('f-nome').value = "";
             document.getElementById('f-desc').value = "";
-            document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+            document.querySelectorAll('.prob').forEach(c => c.checked = false);
+            document.getElementById('check-outros').checked = false;
             document.getElementById('f-outros').style.display = 'none';
             
-            alert("Ordem de serviço aberta com sucesso!");
-        }).catch((error) => {
-            alert("Erro ao salvar no banco de dados: " + error.message);
-        });
+            alert("Chamado aberto com sucesso!");
+        }).catch(err => alert("Erro ao salvar: " + err));
     };
 
-    document.getElementById('btn-enviar-os').onclick = window.enviarOS;
+    // --- FUNÇÕES DE ADMIN ---
 
+    window.mudarStatus = (id, novoStatus) => {
+        const dados = { status: novoStatus };
+        if(novoStatus === 'Resolvida') dados.resolvida_em = new Date().toLocaleString('pt-BR');
+        update(ref(db, `chamados/${id}`), dados);
+    };
+
+    window.excluir = (id) => {
+        if(confirm("Tem certeza que deseja apagar?")) remove(ref(db, `chamados/${id}`));
+    };
 
     onValue(ref(db, 'chamados'), (snapshot) => {
         const container = document.getElementById('lista-meses');
         container.innerHTML = "";
-        if(!snapshot.exists()) return;
-        
+        if(!snapshot.exists()) {
+            container.innerHTML = "<p style='text-align:center'>Nenhum chamado aberto.</p>";
+            return;
+        }
+
         const dados = snapshot.val();
         const meses = {};
-        
+
         Object.keys(dados).forEach(id => {
             const os = dados[id];
             if(!meses[os.mes_ref]) meses[os.mes_ref] = [];
