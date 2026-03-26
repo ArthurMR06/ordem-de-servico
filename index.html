@@ -49,7 +49,7 @@
         <div id="login-func" class="card-login">
             <h3>Acesso Funcionário</h3>
             <input type="password" id="pass-func-in" placeholder="Senha do Funcionário">
-            <button class="btn btn-save" onclick="realizarLogin('func')">Entrar</button>
+            <button class="btn btn-save" id="btn-login-func">Entrar</button>
         </div>
         <div id="area-func" style="display:none;">
             <input type="text" id="f-nome" placeholder="Seu Nome">
@@ -62,14 +62,14 @@
             </div>
             <input type="text" id="f-outros" placeholder="Especifique o problema" style="display:none;">
             <textarea id="f-desc" rows="3" placeholder="Detalhes da Ordem de Serviço"></textarea>
-            <button class="btn btn-save" onclick="enviarOS()">🚀 Abrir Chamado e Notificar WhatsApp</button>
+            <button class="btn btn-save" id="btn-enviar-os">🚀 Abrir Chamado e Notificar WhatsApp</button>
         </div>
     </div>
     <div id="sec-adm" class="section">
         <div id="login-adm" class="card-login">
             <h3>Painel do Criador</h3>
             <input type="password" id="pass-adm-in" placeholder="Senha do ADM">
-            <button class="btn btn-save" onclick="realizarLogin('adm')">Acessar Relatórios</button>
+            <button class="btn btn-save" id="btn-login-adm">Acessar Relatórios</button>
         </div>
         <div id="area-adm" style="display:none;">
             <div id="lista-meses"></div>
@@ -78,7 +78,7 @@
 </div>
 
 <footer>
-    © 2026 Arthur M. Rangel  |  Versão 1.0
+    © 2026 Arthur M. Rangel | Versão 1.0
 </footer>
 
 <script type="module">
@@ -107,14 +107,18 @@
         } else { alert("Senha incorreta!"); }
     };
 
-    document.getElementById('tab-func').onclick = () => { toggle('func'); };
-    document.getElementById('tab-adm').onclick = () => { toggle('adm'); };
-    function toggle(t) {
+    document.getElementById('btn-login-func').onclick = () => window.realizarLogin('func');
+    document.getElementById('btn-login-adm').onclick = () => window.realizarLogin('adm');
+
+    window.toggle = (t) => {
         document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(`tab-${t}`).classList.add('active');
         document.getElementById(`sec-${t}`).classList.add('active');
     }
+
+    document.getElementById('tab-func').onclick = () => window.toggle('func');
+    document.getElementById('tab-adm').onclick = () => window.toggle('adm');
 
     document.getElementById('check-outros').onchange = (e) => {
         document.getElementById('f-outros').style.display = e.target.checked ? 'block' : 'none';
@@ -139,16 +143,23 @@
         push(ref(db, 'chamados'), novaOS).then(() => {
             const textoZap = `*NOVA OS* %0A*De:* ${novaOS.funcionario} %0A*Problemas:* ${novaOS.problemas} %0A*Data:* ${novaOS.criado_em}`;
             window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
-            limpar();
+            document.getElementById('f-nome').value = ""; 
+            document.getElementById('f-desc').value = "";
+            document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+            document.getElementById('f-outros').style.display = 'none';
             alert("Ordem de serviço aberta!");
         });
     };
 
-    function limpar() {
-        document.getElementById('f-nome').value = ""; document.getElementById('f-desc').value = "";
-        document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
-        document.getElementById('f-outros').style.display = 'none';
-    }
+    document.getElementById('btn-enviar-os').onclick = window.enviarOS;
+
+    window.mudarStatus = (id, status) => {
+        const updates = { status: status };
+        if(status === 'Resolvida') updates.resolvida_em = new Date().toLocaleString('pt-BR');
+        update(ref(db, `chamados/${id}`), updates);
+    };
+
+    window.excluir = (id) => { if(confirm("Deseja apagar esta OS?")) remove(ref(db, `chamados/${id}`)); };
 
     onValue(ref(db, 'chamados'), (snapshot) => {
         const container = document.getElementById('lista-meses');
@@ -184,14 +195,6 @@
             container.innerHTML += html;
         });
     });
-
-    window.mudarStatus = (id, status) => {
-        const updates = { status: status };
-        if(status === 'Resolvida') updates.resolvida_em = new Date().toLocaleString('pt-BR');
-        update(ref(db, `chamados/${id}`), updates);
-    };
-
-    window.excluir = (id) => { if(confirm("Deseja apagar esta OS?")) remove(ref(db, `chamados/${id}`)); };
 </script>
 </body>
 </html>
