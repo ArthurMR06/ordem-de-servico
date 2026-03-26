@@ -105,7 +105,8 @@
         projectId: "abertura-os-8fa59",
         storageBucket: "abertura-os-8fa59.firebasestorage.app",
         messagingSenderId: "679824713317",
-        appId: "1:679824713317:web:12bae59ccccaf6a1ea888c"
+        appId: "1:679824713317:web:12bae59ccccaf6a1ea888c",
+        databaseURL: "https://abertura-os-8fa59-default-rtdb.firebaseio.com"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -194,7 +195,7 @@
                 document.getElementById('f-outros').style.display = 'none';
                 alert("Chamado enviado com sucesso!");
             }).catch((error) => {
-                alert("Erro ao salvar no banco de dados: " + error.message);
+                alert("Erro ao salvar: " + error.message);
             });
         }
     });
