@@ -21,7 +21,7 @@
         .campo-senha { position: relative; width: 100%; margin: 15px 0; }
         .campo-senha input { width: 100%; padding: 12px 40px 12px 12px; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; outline: none; }
         .olho { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 20px; }
-        input[type="text"], textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; background: white; }
+        input[type="text"], input[type="tel"], textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; background: white; }
         .grid-probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0; }
         .check-item { position: relative; }
         .check-item input { display: none; }
@@ -30,7 +30,7 @@
         .month-group { margin-top: 25px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .month-header { background: var(--dark); color: white; padding: 12px 20px; font-weight: bold; }
         .card-os { background: white; border-bottom: 1px solid #f1f5f9; padding: 20px; text-align: left; }
-        .status-badge { float: right; padding: 5px 12px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; }
+        .status-badge { float: right; padding: 5px 12px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; text-transform: uppercase; }
         .bg-pendente { background: var(--primary); }
         .bg-emespera { background: var(--warning); }
         .bg-resolvida { background: var(--success); }
@@ -39,6 +39,7 @@
         .btn-wait { background: var(--warning); margin-right: 5px; }
         .btn-done { background: var(--success); margin-right: 5px; }
         .btn-del { background: var(--danger); }
+        .input-obs-tecnica { background: #fff7ed !important; border-color: #fed7aa !important; margin-top: 10px !important; }
         footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #94a3b8; }
     </style>
 </head>
@@ -62,6 +63,7 @@
         </div>
         <div id="area-func" style="display:none;">
             <input type="text" id="f-nome" placeholder="Seu nome completo">
+            <input type="tel" id="f-tel" placeholder="Seu WhatsApp (Ex: 21999998888)">
             
             <p><strong>Tipo de Atendimento:</strong></p>
             <select id="f-tipo">
@@ -119,12 +121,34 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const WHATS_CRIADOR = "5521989127567";
+    const WHATS_ADM = "5521989127567";
 
-    window.mudarStatus = (id, novo) => {
-        const upd = { status: novo };
-        if(novo === 'Resolvida') upd.resolvida_em = new Date().toLocaleString('pt-BR');
-        update(ref(db, `chamados/${id}`), upd);
+    window.mudarStatus = (id, novoStatus, telefoneCliente, nomeCliente) => {
+        const inputObs = document.getElementById(`obs-${id}`);
+        const msgOpcional = inputObs ? inputObs.value : "";
+        const timestamp = new Date().toLocaleString('pt-BR');
+
+        const upd = { 
+            status: novoStatus,
+            ultima_atualizacao: timestamp,
+            mensagem_tecnico: msgOpcional 
+        };
+        
+        if(novoStatus === 'Resolvida') upd.resolvida_em = timestamp;
+
+        update(ref(db, `chamados/${id}`), upd).then(() => {
+            const statusEmoji = novoStatus === 'Resolvida' ? '✅ FINALIZADO' : '⏳ EM ESPERA/ANDAMENTO';
+            let textoCliente = `Olá *${nomeCliente}*, seu chamado técnico foi atualizado!%0A%0A`;
+            textoCliente += `*Status:* ${statusEmoji}%0A`;
+            textoCliente += `*Data:* ${timestamp}%0A`;
+            
+            if(msgOpcional) {
+                textoCliente += `%0A*Observação do Técnico:* ${msgOpcional}`;
+            }
+
+            const linkZap = `https://api.whatsapp.com/send?phone=55${telefoneCliente.replace(/\D/g,'')}&text=${textoCliente}`;
+            window.open(linkZap, '_blank');
+        });
     };
 
     window.excluir = (id) => {
@@ -134,13 +158,11 @@
     document.getElementById('btn-olho-func').onclick = () => {
         const input = document.getElementById('pass-func-in');
         input.type = input.type === 'password' ? 'text' : 'password';
-        document.getElementById('btn-olho-func').innerText = input.type === 'password' ? '👁️' : '🚫';
     };
 
     document.getElementById('btn-olho-adm').onclick = () => {
         const input = document.getElementById('pass-adm-in');
         input.type = input.type === 'password' ? 'text' : 'password';
-        document.getElementById('btn-olho-adm').innerText = input.type === 'password' ? '👁️' : '🚫';
     };
 
     document.getElementById('btn-login-func').onclick = () => {
@@ -157,19 +179,16 @@
         } else { alert("Senha incorreta!"); }
     };
 
-    document.getElementById('tab-func').onclick = () => {
-        document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('tab-func').classList.add('active');
-        document.getElementById('sec-func').classList.add('active');
-    };
-
-    document.getElementById('tab-adm').onclick = () => {
-        document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('tab-adm').classList.add('active');
-        document.getElementById('sec-adm').classList.add('active');
-    };
+    const tabs = ['tab-func', 'tab-adm'];
+    tabs.forEach(tabId => {
+        document.getElementById(tabId).onclick = () => {
+            document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            const secId = tabId === 'tab-func' ? 'sec-func' : 'sec-adm';
+            document.getElementById(secId).classList.add('active');
+        };
+    });
 
     document.getElementById('check-outros').onchange = (e) => {
         document.getElementById('f-outros').style.display = e.target.checked ? 'block' : 'none';
@@ -177,6 +196,7 @@
 
     document.getElementById('btn-enviar-os').onclick = () => {
         const nome = document.getElementById('f-nome').value;
+        const tel = document.getElementById('f-tel').value;
         const desc = document.getElementById('f-desc').value;
         const tipo = document.getElementById('f-tipo').value;
         let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
@@ -185,14 +205,16 @@
             let outrosVal = document.getElementById('f-outros').value;
             if(outrosVal) selecionados.push(outrosVal);
         }
-        if(!nome || selecionados.length === 0) {
-            alert("Preencha seu nome e selecione o problema!");
+
+        if(!nome || !tel || selecionados.length === 0) {
+            alert("Preencha Nome, WhatsApp e selecione o problema!");
             return;
         }
         
         const agora = new Date();
         const novaOS = {
             funcionario: nome,
+            telefone: tel,
             tipo_atendimento: tipo,
             problemas: selecionados.join(", "),
             descricao: desc || "Nenhuma observação.",
@@ -203,21 +225,23 @@
         };
 
         push(ref(db, 'chamados'), novaOS).then(() => {
-            const textoZap = `*SOLICITAÇÃO DE SUPORTE*%0A*Funcionário:* ${novaOS.funcionario}%0A*Atendimento:* ${novaOS.tipo_atendimento}%0A*Problemas:* ${novaOS.problemas}%0A*Obs:* ${novaOS.descricao}%0A*Data:* ${novaOS.criado_em}`;
-            window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
+            const textoZap = `*NOVA OS CRIADA*%0A*Funcionário:* ${novaOS.funcionario}%0A*WhatsApp:* ${novaOS.telefone}%0A*Atendimento:* ${novaOS.tipo_atendimento}%0A*Problemas:* ${novaOS.problemas}%0A*Obs:* ${novaOS.descricao}%0A*Data:* ${novaOS.criado_em}`;
+            window.open(`https://api.whatsapp.com/send?phone=${WHATS_ADM}&text=${textoZap}`, '_blank');
             document.getElementById('f-nome').value = "";
+            document.getElementById('f-tel').value = "";
             document.getElementById('f-desc').value = "";
             document.querySelectorAll('.prob').forEach(c => c.checked = false);
             document.getElementById('check-outros').checked = false;
             document.getElementById('f-outros').style.display = 'none';
-            alert("Chamado enviado com sucesso!");
-        });
+            alert("Chamado salvo e enviado ao suporte!");
+        }).catch(err => alert("Erro ao salvar: " + err));
     };
 
     onValue(ref(db, 'chamados'), (snapshot) => {
         const container = document.getElementById('lista-meses');
         container.innerHTML = "";
         if(!snapshot.exists()) return;
+        
         const dados = snapshot.val();
         const meses = {};
         
@@ -231,16 +255,22 @@
             let html = `<div class="month-group"><div class="month-header">${mes}</div>`;
             meses[mes].reverse().forEach(os => {
                 const badgeClass = `bg-${os.status.toLowerCase().replace(/\s/g, "")}`;
+                const telLimpo = os.telefone ? os.telefone.replace(/\D/g,'') : '';
+
                 html += `<div class="card-os">
                     <span class="status-badge ${badgeClass}">${os.status}</span>
                     <strong>👤 ${os.funcionario}</strong> 
-                    <span style="font-size: 0.8em; color: var(--primary); margin-left:10px;">[${os.tipo_atendimento || 'N/A'}]</span>
-                    <p><b>Problemas:</b> ${os.problemas}<br>
-                    <b>Observação:</b> <small>${os.descricao}</small></p>
-                    <span class="time-info">📅 ${os.criado_em}</span>
+                    <span style="font-size: 0.85em; color: #64748b;">📞 ${os.telefone || 'Sem número'}</span>
+                    <p style="margin: 10px 0;">
+                        <b>Serviço:</b> ${os.tipo_atendimento}<br>
+                        <b>Problemas:</b> ${os.problemas}<br>
+                        <b>Detalhes:</b> <small>${os.descricao}</small>
+                    </p>
+                    <div style="font-size: 0.8em; color: #94a3b8;">📅 Criado em: ${os.criado_em}</div>
+                    <input type="text" id="obs-${os.id}" class="input-obs-tecnica" placeholder="Opcional: O que foi feito?">
                     <div style="margin-top:15px">
-                        <button class="btn btn-wait" onclick="mudarStatus('${os.id}', 'Em Espera')">Espera</button>
-                        <button class="btn btn-done" onclick="mudarStatus('${os.id}', 'Resolvida')">Resolver</button>
+                        <button class="btn btn-wait" onclick="mudarStatus('${os.id}', 'Em Espera', '${telLimpo}', '${os.funcionario}')">Espera</button>
+                        <button class="btn btn-done" onclick="mudarStatus('${os.id}', 'Resolvida', '${telLimpo}', '${os.funcionario}')">Finalizar</button>
                         <button class="btn btn-del" onclick="excluir('${os.id}')">Excluir</button>
                     </div>
                 </div>`;
