@@ -20,7 +20,7 @@
         .card-login { max-width: 350px; margin: 40px auto; text-align: center; padding: 25px; border-radius: 12px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .campo-senha { position: relative; width: 100%; margin: 15px 0; }
         .campo-senha input { width: 100%; padding: 12px 40px 12px 12px; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; outline: none; }
-        .olho { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 20px; }
+        .olho { position: absolute; right: 12px; top: 45%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 20px; }
         input[type="text"], input[type="tel"], textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; background: white; }
         .grid-probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0; }
         .check-item { position: relative; }
@@ -57,7 +57,7 @@
             <h3>Identifique-se</h3>
             <div class="campo-senha">
                 <input type="password" id="pass-func-in" placeholder="Senha de acesso">
-                <span class="olho" id="btn-olho-func">👁️</span>
+                <span class="olho" id="btn-olho-func">🚫</span>
             </div>
             <button class="btn btn-save" id="btn-login-func">Acessar Formulário</button>
         </div>
@@ -93,7 +93,7 @@
             <h3>Acesso Administrativo</h3>
             <div class="campo-senha">
                 <input type="password" id="pass-adm-in" placeholder="Senha ADM">
-                <span class="olho" id="btn-olho-adm">👁️</span>
+                <span class="olho" id="btn-olho-adm">🚫</span>
             </div>
             <button class="btn btn-save" id="btn-login-adm">Ver Chamados</button>
         </div>
@@ -157,12 +157,26 @@
 
     document.getElementById('btn-olho-func').onclick = () => {
         const input = document.getElementById('pass-func-in');
-        input.type = input.type === 'password' ? 'text' : 'password';
+        const btn = document.getElementById('btn-olho-func');
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '👁️';
+        } else {
+            input.type = 'password';
+            btn.textContent = '🚫';
+        }
     };
 
     document.getElementById('btn-olho-adm').onclick = () => {
         const input = document.getElementById('pass-adm-in');
-        input.type = input.type === 'password' ? 'text' : 'password';
+        const btn = document.getElementById('btn-olho-adm');
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '👁️';
+        } else {
+            input.type = 'password';
+            btn.textContent = '🚫';
+        }
     };
 
     document.getElementById('btn-login-func').onclick = () => {
